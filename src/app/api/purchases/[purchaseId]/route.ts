@@ -1,18 +1,24 @@
 import { connectDB } from "@/configs/dbConfig";
 import { NextRequest, NextResponse } from "next/server";
 import { validateJWT } from "@/helpers/validateJWT";
-import Product from "@/models/productModel";
-import { excludeAttributes } from "../../utils/util";
+import Purchase from "@/models/purchaseModel";
 
 connectDB();
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { productid: string } }
+  { params }: { params: { purchaseId: string } }
 ) {
   try {
-    const product = await Product.findById(params.productid);
-    return NextResponse.json(product);
+    const purchase = await Purchase.findById(params.purchaseId)
+    .populate('purchasedBy') // Populate user details
+    .populate('vendorId') // Populate vendor details
+    .populate({
+      path: 'items.productId',
+      select: 'name price countInStock'
+    }); 
+    
+    return NextResponse.json(purchase);
   } catch (error: any) {
     return NextResponse.json({ message: error.message }, { status: 500 });
   }
@@ -24,18 +30,16 @@ export async function PUT(
     params,
   }: {
     params: {
-      productid: string;
+      purchaseId: string;
     };
   }
 ) {
   try {
     await validateJWT(request);
     const reqBody = await request.json();
-
-    const productBody = excludeAttributes(reqBody, ["price", "purchasingPrice", "countInStock"])
-    await Product.findByIdAndUpdate(params.productid, productBody);
+    await Purchase.findByIdAndUpdate(params.purchaseId, reqBody);
     return NextResponse.json({
-      message: "Product updated successfully",
+      message: "Purchase updated successfully",
     });
   } catch (error: any) {
     return NextResponse.json({ message: error.message }, { status: 500 });
@@ -44,13 +48,13 @@ export async function PUT(
 
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { productid: string } }
+  { params }: { params: { purchaseId: string } }
 ) {
   try {
     await validateJWT(request);
-    await Product.findByIdAndDelete(params.productid);
+    await Purchase.findByIdAndDelete(params.purchaseId);
     return NextResponse.json({
-      message: "Product deleted successfully",
+      message: "Purchase deleted successfully",
     });
   } catch (error: any) {
     return NextResponse.json({ message: error.message }, { status: 500 });

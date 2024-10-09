@@ -1,18 +1,17 @@
 import { connectDB } from "@/configs/dbConfig";
 import { NextRequest, NextResponse } from "next/server";
 import { validateJWT } from "@/helpers/validateJWT";
-import Product from "@/models/productModel";
-import { excludeAttributes } from "../../utils/util";
+import Vendor from "@/models/vendorModel";
 
 connectDB();
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { productid: string } }
+  { params }: { params: { vendorId: string } }
 ) {
   try {
-    const product = await Product.findById(params.productid);
-    return NextResponse.json(product);
+    const vendor = await Vendor.findById(params.vendorId);
+    return NextResponse.json(vendor);
   } catch (error: any) {
     return NextResponse.json({ message: error.message }, { status: 500 });
   }
@@ -24,18 +23,16 @@ export async function PUT(
     params,
   }: {
     params: {
-      productid: string;
+      vendorId: string;
     };
   }
 ) {
   try {
     await validateJWT(request);
     const reqBody = await request.json();
-
-    const productBody = excludeAttributes(reqBody, ["price", "purchasingPrice", "countInStock"])
-    await Product.findByIdAndUpdate(params.productid, productBody);
+    await Vendor.findByIdAndUpdate(params.vendorId, reqBody);
     return NextResponse.json({
-      message: "Product updated successfully",
+      message: "Vendor updated successfully",
     });
   } catch (error: any) {
     return NextResponse.json({ message: error.message }, { status: 500 });
@@ -44,13 +41,13 @@ export async function PUT(
 
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { productid: string } }
+  { params }: { params: { vendorId: string } }
 ) {
   try {
     await validateJWT(request);
-    await Product.findByIdAndDelete(params.productid);
+    await Vendor.findByIdAndDelete(params.vendorId);
     return NextResponse.json({
-      message: "Product deleted successfully",
+      message: "Vendor deleted successfully",
     });
   } catch (error: any) {
     return NextResponse.json({ message: error.message }, { status: 500 });

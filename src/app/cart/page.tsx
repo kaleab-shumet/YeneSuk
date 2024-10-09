@@ -7,18 +7,60 @@ import {
 import React from "react";
 import { useDispatch, useSelector } from "react-redux";
 import Image from "next/image";
-import { Button } from "antd";
-import CheckoutModal from "./CheckoutModal";
+import { Button, message } from "antd";
+import { useRouter } from "next/navigation";
+import { ClearCart } from "@/redux/cartSlice";
+
+import axios from "axios";
+import { showConfirm } from "../profile/components/ConfirmDialog";
+
+
 
 function Cart() {
-  const [showCheckoutModal, setShowCheckoutModal] = React.useState(false);
+
+  
+  const [loading, setLoading] = React.useState(false);
   const { cartItems }: CartState = useSelector((state: any) => state.cart);
   const subTotal = cartItems.reduce(
     (acc, item) => acc + item.price * item.quantity,
     0
   );
-  const total = subTotal + 50;
+  const total = subTotal;
   const dispatch = useDispatch();
+  const router = useRouter();
+
+  const handleCheckOut = async (event: any) => {
+    try {
+      setLoading(true);
+      event.preventDefault();
+
+      const userConfirmed = await showConfirm("Checkout","Are you sure you want to checkout?");
+      if (!userConfirmed) return;
+
+      //message.success("Checkout successful");
+
+      // save order to database
+      const orderPayload = {
+        items: cartItems.map((e) => ({
+          _id: e._id,
+          quantity: e.quantity,
+        })),
+      };
+      await axios.post("/api/orders/place_order", orderPayload);
+      dispatch(ClearCart());
+      message.success("Order placed successfully");
+      router.push("/profile");
+    } catch (error: any) {
+
+      const errMsg = error?.response?.data?.message || error.message
+      console.log(errMsg)
+
+      message.error(errMsg);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <div className="mt-10">
       {cartItems.length > 0 ? (
@@ -99,9 +141,7 @@ function Cart() {
                 </span>
 
                 <div className="xl:hidden block col-span-4">
-                    <hr
-                     className="border border-gray-400 border-dotted"
-                    />
+                  <hr className="border border-gray-400 border-dotted" />
                 </div>
               </div>
             ))}
@@ -111,7 +151,7 @@ function Cart() {
             <h1 className="text-xl font-semibold">Amount Summary</h1>
             <hr className="border border-gray-400 border-dashed" />
             <div className="flex flex-col gap-2 mt-5">
-              <div className="flex justify-between">
+              {/* <div className="flex justify-between">
                 <span>Subtotal</span>
                 <span>
                   ${" "}
@@ -120,12 +160,12 @@ function Cart() {
                     0
                   )}
                 </span>
-              </div>
+              </div> */}
 
-              <div className="flex justify-between">
+              {/* <div className="flex justify-between">
                 <span>Shipping Fee</span>
                 <span>$ 50</span>
-              </div>
+              </div> */}
 
               <hr className="border border-gray-200 border-dashed" />
 
@@ -138,9 +178,7 @@ function Cart() {
                 block
                 type="primary"
                 className="mt-10"
-                onClick={() => {
-                  setShowCheckoutModal(true);
-                }}
+                onClick={handleCheckOut}
               >
                 Proceed to Checkout
               </Button>
@@ -152,14 +190,6 @@ function Cart() {
           <i className="ri-shopping-cart-line text-6xl"></i>
           <h1 className="text-sm">Your cart is empty</h1>
         </div>
-      )}
-
-      {showCheckoutModal && (
-        <CheckoutModal
-          setShowCheckoutModal={setShowCheckoutModal}
-          showCheckoutModal={showCheckoutModal}
-          total={total}
-        />
       )}
     </div>
   );

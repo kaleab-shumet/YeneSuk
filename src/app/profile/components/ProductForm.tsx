@@ -56,14 +56,6 @@ function ProductForm({
         </div>
 
         <Form.Item
-          label="Price"
-          name="price"
-          rules={getAntdFieldRequiredRule("Price is required")}
-        >
-          <input type="number" />
-        </Form.Item>
-
-        <Form.Item
           label="Category"
           name="category"
           rules={getAntdFieldRequiredRule("Category is required")}
@@ -76,14 +68,6 @@ function ProductForm({
               </option>
             ))}
           </select>
-        </Form.Item>
-
-        <Form.Item
-          label="Count In Stock"
-          name="countInStock"
-          rules={getAntdFieldRequiredRule("Stock is required")}
-        >
-          <input type="number" />
         </Form.Item>
 
         <div className="col-span-3 flex gap-5">

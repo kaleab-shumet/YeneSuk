@@ -2,8 +2,11 @@ import { connectDB } from "@/configs/dbConfig";
 import { NextRequest, NextResponse } from "next/server";
 import Product from "@/models/productModel";
 import { validateJWT } from "@/helpers/validateJWT";
+import { excludeAttributes } from "../utils/util";
 
 connectDB();
+
+
 
 export async function POST(request: NextRequest) {
   try {
@@ -18,7 +21,12 @@ export async function POST(request: NextRequest) {
     }
 
     reqBody.createdBy = userId;
-    const product = new Product(reqBody);
+
+    const productBody = excludeAttributes(reqBody, ["price", "purchasingPrice", "countInStock"])
+
+
+
+    const product = new Product(productBody);
     await product.save();
 
     return NextResponse.json({

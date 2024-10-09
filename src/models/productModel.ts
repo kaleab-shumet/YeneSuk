@@ -9,8 +9,11 @@ const productSchema = new mongoose.Schema(
       ref: "categories",
       required: true,
     },
-    price: { type: Number, required: true },
-    countInStock: { type: Number, required: true },
+
+    price: { type: Number, default: 0.0 },
+    purchasingPrice: { type: Number, default: 0.0 },
+    countInStock: { type: Number, default: 0 },
+
     images: { type: [], required: true, default: [] },
     features: { type: [], required: true, default: [] },
     rating: { type: Number, required: false, default: 0 },

@@ -4,6 +4,7 @@ import { Table, message } from "antd";
 import moment from "moment";
 import { useRouter } from "next/navigation";
 import Loader from "@/components/Loader";
+import { showConfirm } from "./ConfirmDialog";
 
 function AdminOrdersList() {
   const router = useRouter();
@@ -11,6 +12,8 @@ function AdminOrdersList() {
   const [statusUpdateLoading = false, setStatusUpdateLoading] =
     React.useState<boolean>(false);
   const [orders = [], setOrders] = React.useState([]);
+
+  const orderStatusList = ["created", "completed", "cancelled"];
 
   const getOrders = async () => {
     try {
@@ -28,24 +31,19 @@ function AdminOrdersList() {
 
   const onStatusUpdate = async (orderId: string, status: string) => {
     try {
+      let uConfirm = true;
+      if (status == "cancelled") {
+        uConfirm = await showConfirm(
+          "Cancel Order",
+          "Are you sure you want to cancel this order ?"
+        );
+      }
+
+      if (!uConfirm) return;
       setStatusUpdateLoading(true);
       const endPoint = `/api/orders/${orderId}`;
       await axios.put(endPoint, { orderStatus: status });
       message.success("Order status updated successfully");
-      getOrders();
-    } catch (error: any) {
-      message.error(error.response.data.message);
-    } finally {
-      setStatusUpdateLoading(false);
-    }
-  };
-
-  const onRefundissue = async (orderId: string, transactionId: string) => {
-    try {
-      setStatusUpdateLoading(true);
-      const endPoint = `/api/stripe_refund`;
-      await axios.post(endPoint, { orderId, transactionId });
-      message.success("Refund issued successfully");
       getOrders();
     } catch (error: any) {
       message.error(error.response.data.message);
@@ -87,19 +85,19 @@ function AdminOrdersList() {
             onChange={(e) => {
               onStatusUpdate(record._id, e.target.value);
             }}
+            disabled={status === "cancelled" ? true : false}
           >
-            <option value="order placed">Order Placed</option>
-            <option value="shipped">Shipped</option>
-            <option value="out for delivery">Out for Delivery</option>
-            <option value="delivered">Delivered</option>
-
-            <option value="cancelled">Cancelled</option>
+            {status !== "created"
+              ? orderStatusList
+                  .filter((i) => i !== "created")
+                  .map((os) => <option value={os}>{os}</option>)
+              : orderStatusList.map((os) => <option value={os}>{os}</option>)}
           </select>
         </div>
       ),
     },
     {
-      title: "Status",
+      title: "Payment",
       dataIndex: "paymentStatus",
       render: (status: string) => status.toUpperCase(),
     },
@@ -107,17 +105,6 @@ function AdminOrdersList() {
       title: "Action",
       render: (record: any) => (
         <div className="flex gap-5">
-          {record.orderStatus === "cancelled" &&
-            record.paymentStatus === "paid" && (
-              <span
-                className="underline cursor-pointer"
-                onClick={() => {
-                  onRefundissue(record._id, record.transactionId);
-                }}
-              >
-                Issue Refund
-              </span>
-            )}
           <span
             className="underline cursor-pointer"
             onClick={() => {

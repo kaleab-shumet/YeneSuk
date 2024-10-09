@@ -7,6 +7,8 @@ import { useRouter, useSearchParams } from "next/navigation";
 import ProductsList from "./components/ProductsList";
 import UsersOrdersList from "./components/UsersOrdersList";
 import AdminOrdersList from "./components/AdminOrdersList";
+import AdminPurchaseList from "./components/AdminPurchaseList";
+import AdminVendorList from "./components/AdminVendorList";
 import PersonalInfo from "./components/PersonalInfo";
 import UsersList from "./components/UsersList";
 
@@ -28,19 +30,33 @@ function Profile() {
           }}
           activeKey={selectedTab}
         >
-          <Tabs.TabPane tab="Products" key="1">
-            <ProductsList />
-          </Tabs.TabPane>
-          <Tabs.TabPane tab="Categories" key="2">
-            <CategoriesList />
-          </Tabs.TabPane>
-          <Tabs.TabPane tab="Orders" key="3">
+          <Tabs.TabPane tab="Orders" key="1">
             <AdminOrdersList />
           </Tabs.TabPane>
-          <Tabs.TabPane tab="Users" key="4">
+
+          <Tabs.TabPane tab="Products" key="2">
+            <ProductsList />
+          </Tabs.TabPane>
+
+          <Tabs.TabPane tab="Purchases" key="3">
+            <AdminPurchaseList />
+          </Tabs.TabPane>
+
+          <Tabs.TabPane tab="Vendors" key="4">
+            <AdminVendorList />
+          </Tabs.TabPane>
+
+          
+          <Tabs.TabPane tab="Categories" key="5">
+            <CategoriesList />
+          </Tabs.TabPane>
+         
+          
+          
+          <Tabs.TabPane tab="Users" key="6">
             <UsersList />
           </Tabs.TabPane>
-          <Tabs.TabPane tab="Personal Information" key="5">
+          <Tabs.TabPane tab="Personal Information" key="7">
             <PersonalInfo />
           </Tabs.TabPane>
         </Tabs>

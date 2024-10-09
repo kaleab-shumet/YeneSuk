@@ -13,7 +13,12 @@ function OderInfo({ params }: { params: any }) {
     try {
       setLoading(true);
       const response = await axios.get(`/api/orders/${params.orderid}`);
-      setOrder(response.data);
+      
+      const orderData = response.data
+
+      console.log(orderData)
+
+      setOrder(orderData);
     } catch (error: any) {
       message.error(error.message);
     } finally {
@@ -68,7 +73,15 @@ function OderInfo({ params }: { params: any }) {
           <hr className="border-gray-300 border-solid" />
 
           <div className="flex flex-col xl:grid grid-cols-3 gap-5 mt-8 w-full">
-            <h1 className="text-xl col-span-3">Basic Information</h1>
+            
+            
+          <h1 className="text-xl col-span-3">User Information</h1>
+          {getProperty("UserId", order.user._id)}
+          {getProperty("Name", order.user.name)}
+          {getProperty("Email", order.user.email)}
+
+
+          <h1 className="text-xl col-span-3">Order Information</h1>
 
             {getProperty("Order ID", order._id)}
             {getProperty(
@@ -82,11 +95,11 @@ function OderInfo({ params }: { params: any }) {
 
             <hr className="border-gray-300 border-dashed col-span-3" />
 
-            <h1 className="text-xl col-span-3">Shipping Information</h1>
+            {/* <h1 className="text-xl col-span-3">Shipping Information</h1>
 
             {Object.keys(order.shippingAddress.address).map((key) => {
               return getProperty(key, order.shippingAddress.address[key]);
-            })}
+            })} */}
 
             <hr className="border-gray-300 border-dashed col-span-3" />
           </div>

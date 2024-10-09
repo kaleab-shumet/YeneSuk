@@ -5,7 +5,7 @@ import LayoutProvider from "@/providers/LayoutProvider";
 import StoreProvider from "@/providers/StoreProvider";
 
 export const metadata: Metadata = {
-  title: "Sheyshop-Next Dev",
+  title: "Yene Suk",
   description: "An e-commerce site built with Next.js and TypeScript.",
 };
 

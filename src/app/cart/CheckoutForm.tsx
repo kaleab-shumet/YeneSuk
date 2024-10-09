@@ -1,12 +1,7 @@
 "use client";
 import React from "react";
 import { Button, message } from "antd";
-import {
-  PaymentElement,
-  AddressElement,
-  useElements,
-  useStripe,
-} from "@stripe/react-stripe-js";
+
 import axios from "axios";
 import { useSelector } from "react-redux";
 import { CartState, ClearCart } from "@/redux/cartSlice";
@@ -22,8 +17,7 @@ function CheckoutForm({
   setShowCheckoutModal: any;
 }) {
   const [loading, setLoading] = React.useState(false);
-  const elements = useElements();
-  const stripe = useStripe();
+
   const { cartItems }: CartState = useSelector((state: any) => state.cart);
   const router = useRouter();
   const dispatch = useDispatch();
@@ -32,20 +26,7 @@ function CheckoutForm({
     try {
       setLoading(true);
       event.preventDefault();
-      if (!stripe || !elements) {
-        throw new Error("Stripe.js hasn't loaded yet.");
-      }
-      const result = await stripe.confirmPayment({
-        elements,
-        confirmParams: {
-          return_url: "http://localhost:3000/cart",
-        },
-        redirect: "if_required",
-      });
-
-      if (result.error) {
-        throw result.error;
-      }
+      
 
       message.success("Payment successful");
 
@@ -54,8 +35,6 @@ function CheckoutForm({
         items: cartItems,
         paymentStatus: "paid",
         orderStatus: "order placed",
-        shippingAddress: result.paymentIntent.shipping,
-        transactionId: result.paymentIntent.id,
         total,
       };
       await axios.post("/api/orders/place_order", orderPayload);
@@ -73,13 +52,7 @@ function CheckoutForm({
       {loading && <Loader />}
       <form onSubmit={handleSubmit}>
         <div className="h-[350px] overflow-y-scroll pr-5">
-          <PaymentElement />
-          <AddressElement
-            options={{
-              allowedCountries: ["US"],
-              mode: "shipping",
-            }}
-          />
+          
         </div>
         <div className="flex gap-5">
           <Button

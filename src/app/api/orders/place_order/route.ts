@@ -6,20 +6,95 @@ import Product from "@/models/productModel";
 
 connectDB();
 
+interface RequestOrderItem {
+  productId: string; // Changed to string
+  quantity: number;
+}
+
+// This is product information to be saved in order
+interface OrderItem {
+  _id: string; // Changed to string
+  name: string; // Changed to string
+  price: number;
+  quantity: number;
+}
+
+
+type HashMap<T> = {
+  [key: string]: T;
+};
+
+async function processOrder(userId: string, reqOrderItemsList: RequestOrderItem[]): Promise<void> {
+  const productsToUpdate: any[] = [];
+  const productsQuantHashmap: HashMap<number> = {}; // Changed to number
+
+  // First pass: Verify all products exist and have sufficient stock
+  for (const item of reqOrderItemsList) {
+    try {
+      const product = await Product.findById(item.productId).exec();
+
+      if (!product) {
+        throw new Error(`Product with ID ${item.productId} not found.`);
+      }
+
+      if (product.countInStock < item.quantity) {
+        throw new Error(`${product.name} is out of stock.`);
+      }
+
+      // Store the product to update later
+      productsToUpdate.push(product);
+      productsQuantHashmap[product._id.toString()] = item.quantity;
+    } catch (error) {
+      console.error(error instanceof Error ? error.message : error);
+      throw error
+    }
+  }
+
+  const orderItems: OrderItem[] = productsToUpdate.map(e => ({
+    _id: e._id.toString(), // Ensure _id is a string
+    name: e.name,
+    price: e.price,
+    quantity: productsQuantHashmap[e._id.toString()]
+  }));
+
+  const totalAmount = orderItems.reduce((acc, ci) => acc + (ci.price * ci.quantity), 0);
+
+  try {
+    const newOrder = new Order({
+      user: userId,
+      items: orderItems,
+      total: totalAmount,
+    });
+
+    await newOrder.save(); // Await save to handle potential errors
+  } catch (err) {
+    console.error(err);
+    throw err
+  }
+
+  // Second pass: Update quantities
+  for (const item of reqOrderItemsList) {
+    const product = productsToUpdate.find(p => p._id.toString() === item.productId);
+
+    if (product) {
+      product.countInStock -= item.quantity; // Subtract the ordered quantity
+      await product.save(); // Save the updated product
+    }
+  }
+}
+
 export async function POST(request: NextRequest) {
   try {
     const userId = await validateJWT(request);
     const reqBody = await request.json();
     reqBody.user = userId;
-    const order = new Order(reqBody);
-    await order.save();
 
-    // Decrease the quantity of the products ordered
-    for (let i = 0; i < reqBody.items.length; i++) {
-      const product: any = await Product.findById(reqBody.items[i]._id);
-      product.countInStock -= reqBody.items[i].quantity;
-      await product.save();
-    }
+    const orderItemsList: RequestOrderItem[] = reqBody.items.map((e: any) => ({
+      productId: e._id,
+      quantity: e.quantity,
+    }));
+
+    await processOrder(userId, orderItemsList);
 
     return NextResponse.json({
       message: "Order placed successfully",
