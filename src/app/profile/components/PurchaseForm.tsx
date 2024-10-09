@@ -15,13 +15,19 @@ interface ProductOption {
   id: string;
   name: string;
 }
-const PurchaseForm = ({ loading, onSave }: PurchaseFormProps) => {
-  const optionsData = [
-    { id: "1", name: "Product A" },
-    { id: "2", name: "Product B" },
-    { id: "3", name: "Product C" },
-  ];
 
+const removeDuplicates = (items: ProductOption[]): ProductOption[] => {
+  const seen = new Set<string>();
+  return items.filter((item) => {
+    if (!seen.has(item.id)) {
+      seen.add(item.id);
+      return true; // Keep this item
+    }
+    return false; // Discard duplicates
+  });
+};
+
+const PurchaseForm = ({ loading, onSave }: PurchaseFormProps) => {
   const [items, setItems] = useState<Item[]>([
     {
       productId: "",
@@ -31,10 +37,10 @@ const PurchaseForm = ({ loading, onSave }: PurchaseFormProps) => {
     },
   ]);
 
-  const [productOptions, setProductOptions] =
-    useState<ProductOption[]>(optionsData);
+  const [productOptions, setProductOptions] = useState<ProductOption[]>([]);
 
   const [excludeItems, setExcludeItems] = useState<string[]>([]);
+  const [isLoading, setIsLoading] = useState<boolean>(false);
 
   const handleAddItem = () => {
     setItems([
@@ -73,7 +79,8 @@ const PurchaseForm = ({ loading, onSave }: PurchaseFormProps) => {
   };
 
   const handleSearch = async (query: string) => {
-    setProductOptions(optionsData.filter((e) => e.name.includes(query)));
+    const optionsData = await fetchOptionsData(query);
+    setProductOptions(optionsData);
   };
 
   const handleChange = (pid: string, index: number) => {
@@ -89,6 +96,25 @@ const PurchaseForm = ({ loading, onSave }: PurchaseFormProps) => {
 
     handleDropdownChange(index, pid);
   };
+
+  const fetchOptionsData = async (query: string) => {
+    setIsLoading(true);
+
+    try {
+      const res = await axios.get("/api/products?search=" + query);
+
+      setIsLoading(false);
+
+      return res.data.data.map((e: any) => ({ id: e._id, name: e.name }));
+    } catch (err) {
+      console.error(err);
+      setIsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    handleSearch("");
+  }, []);
 
   return (
     <Form onFinish={onSave} layout="vertical">
@@ -135,6 +161,8 @@ const PurchaseForm = ({ loading, onSave }: PurchaseFormProps) => {
               value={item.productId}
               onChange={(val) => handleChange(val, index)}
               filterOption={false}
+              loading={isLoading}
+              onClick={() => handleSearch("")}
             >
               {productOptions.map((option) => (
                 <Option key={option.id} value={option.id}>
