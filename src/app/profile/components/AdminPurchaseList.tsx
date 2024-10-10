@@ -11,13 +11,13 @@ function AdminPurchaseList() {
   const [loading, setLoading] = React.useState<boolean>(false);
   const [deleteLoading, setDeleteLoading] = React.useState<boolean>(false);
   const [selectedPurchase, setSelectedPurchase] = React.useState<any>(null); // [1]
-  const [products, setProducts] = React.useState([]);
+  const [purchases, setPurchases] = React.useState([]);
 
   const getPurchases = async () => {
     try {
       setLoading(true);
       const response = await axios.get("/api/purchases");
-      setProducts(response.data.data);
+      setPurchases(response.data.data);
     } catch (error: any) {
       message.error(error.message);
     } finally {
@@ -49,15 +49,15 @@ function AdminPurchaseList() {
     },
     {
       title: "Purchased By",
-      dataIndex: "purchasedBy",
+      dataIndex: ["purchasedBy","name"],
     },
     {
       title: "Vendor",
-      dataIndex: "vendor.name",
+      dataIndex: ["vendor","name"],
     },
     {
       title: "Total Amount",
-      dataIndex: "",
+      dataIndex: "totalAmount",
     },
     
     {
@@ -101,7 +101,7 @@ function AdminPurchaseList() {
       <div className="mt-5">
         <Table
           columns={columns}
-          dataSource={products}
+          dataSource={purchases}
           loading={loading}
           pagination={false}
         />

@@ -1,9 +1,16 @@
-import mongoose, { Schema } from 'mongoose';
+import mongoose, { Schema, Model, Document } from 'mongoose';
+
+// Define the purchase item interface
+export interface PurchaseItem extends Document {
+    product: mongoose.Schema.Types.ObjectId;
+    quantity: number;
+    purchasingPrice: number;
+    sellingPrice: number;
+}
 
 // Define the purchase item schema
 const purchaseItemSchema: Schema = new Schema({
-    
-    productId: {
+    product: {
         type: Schema.Types.ObjectId,
         required: true,
         ref: 'products' // Assuming you have a Product model
@@ -16,12 +23,20 @@ const purchaseItemSchema: Schema = new Schema({
         type: Number,
         required: true
     },
-
     sellingPrice: {
         type: Number,
         required: true
     }
 });
+
+// Define the purchase interface
+export interface IPurchase extends Document {
+    purchasedBy: mongoose.Schema.Types.ObjectId;
+    vendor: mongoose.Schema.Types.ObjectId;
+    items: PurchaseItem[];
+    totalAmount: number;
+    createdAt: Date;
+}
 
 // Define the purchase schema
 const purchaseSchema: Schema = new Schema({
@@ -30,7 +45,7 @@ const purchaseSchema: Schema = new Schema({
         required: true,
         ref: 'users' // Reference to User model, bought by
     },
-    vendorId: {
+    vendor: {
         type: Schema.Types.ObjectId,
         required: true,
         ref: 'vendors' // Reference to Vendor model
@@ -50,7 +65,7 @@ const purchaseSchema: Schema = new Schema({
 });
 
 // Check if the model already exists
-const Purchase = mongoose.models["purchases"] || mongoose.model('purchases', purchaseSchema);
+const Purchase: Model<IPurchase> = mongoose.models["purchases"] || mongoose.model('purchases', purchaseSchema);
 
 // Export the model
 export default Purchase;

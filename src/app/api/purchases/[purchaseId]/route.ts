@@ -12,10 +12,10 @@ export async function GET(
   try {
     const purchase = await Purchase.findById(params.purchaseId)
     .populate('purchasedBy') // Populate user details
-    .populate('vendorId') // Populate vendor details
+    .populate('vendor') // Populate vendor details
     .populate({
-      path: 'items.productId',
-      select: 'name price countInStock'
+      path: 'items.product',
+      select: 'name price purchasingPrice countInStock'
     }); 
     
     return NextResponse.json(purchase);

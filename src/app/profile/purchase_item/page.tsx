@@ -35,10 +35,7 @@ function PurchaseItem() {
       <h1 className="text-2xl font-bold text-gray-800">Purchase Items</h1>
       <hr />
 
-      <PurchaseForm
-        loading={loading}
-        onSave={onSave}
-      />
+      <PurchaseForm />
     </div>
   );
 }

@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { Form, Input, Button, Select, message } from "antd";
 import axios from "axios";
+import { useRouter } from "next/navigation"; // For app directory
 
 const { Option } = Select;
 
@@ -16,204 +17,285 @@ interface ProductOption {
   name: string;
 }
 
-const removeDuplicates = (items: ProductOption[]): ProductOption[] => {
-  const seen = new Set<string>();
-  return items.filter((item) => {
-    if (!seen.has(item.id)) {
-      seen.add(item.id);
-      return true; // Keep this item
-    }
-    return false; // Discard duplicates
-  });
-};
+interface VendorOption {
+  id: string;
+  name: string;
+}
 
-const PurchaseForm = ({ loading, onSave }: PurchaseFormProps) => {
-  const [items, setItems] = useState<Item[]>([
-    {
-      productId: "",
-      purchasingPrice: 0,
-      sellingPrice: 0,
-      quantity: 0,
-    },
-  ]);
-
+const PurchaseForm = () => {
+  const router = useRouter();
+  const [form] = Form.useForm();
   const [productOptions, setProductOptions] = useState<ProductOption[]>([]);
-
-  const [excludeItems, setExcludeItems] = useState<string[]>([]);
+  const [vendorOptions, setVendorOptions] = useState<VendorOption[]>([]);
+  const [selectedProducts, setSelectedProducts] = useState<string[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(false);
 
-  const handleAddItem = () => {
-    setItems([
-      ...items,
-      {
-        productId: "",
-        purchasingPrice: 0,
-        sellingPrice: 0,
-        quantity: 0,
-      },
-    ]);
-  };
+  const [submitLoading, setSubmitLoading] = useState<boolean>(false);
 
-  const handleRemoveItem = (index: number) => {
-    setExcludeItems((prevItems) => [
-      ...prevItems.filter((e) => e != items[index].productId),
-    ]);
-    const newItems = items.filter((_, i) => i !== index);
-    setItems(newItems);
-  };
-
-  const handleInputChange = (
-    index: number,
-    field: keyof Item,
-    value: string | number
-  ) => {
-    const newItems: any = [...items];
-    newItems[index][field] = value as any; // Cast to any to bypass TypeScript error
-    setItems(newItems);
-  };
-
-  const handleDropdownChange = (index: number, productId: string) => {
-    const newItems = [...items];
-    newItems[index].productId = productId;
-    setItems(newItems);
-  };
-
-  const handleSearch = async (query: string) => {
-    const optionsData = await fetchOptionsData(query);
+  const handleProductSearch = async (query: string) => {
+    const optionsData = await fetchOptionsData("/api/products?search=", query);
     setProductOptions(optionsData);
   };
 
-  const handleChange = (pid: string, index: number) => {
-    if (excludeItems.includes(pid)) {
-      message.info("Product already selected");
-      return;
-    }
-
-    setExcludeItems((prevItems) => [
-      ...prevItems.filter((e) => e != items[index].productId),
-      pid,
-    ]);
-
-    handleDropdownChange(index, pid);
+  const handleVendorSearch = async (query: string) => {
+    const optionsData = await fetchOptionsData("/api/vendors?search=", query);
+    setVendorOptions(optionsData);
   };
 
-  const fetchOptionsData = async (query: string) => {
+  const handleProductChange = (pid: string, index: number) => {
+    const currentItems = form.getFieldValue("items") || [];
+    const oldProductId = currentItems[index]?.productId;
+
+    setSelectedProducts((prevSelected) => {
+      const newSelected = prevSelected.filter((id) => id !== oldProductId);
+      return [...newSelected, pid];
+    });
+
+    form.setFieldsValue({
+      items: currentItems.map((item: Item, i: number) =>
+        i === index ? { ...item, productId: pid } : item
+      ),
+    });
+  };
+
+  const fetchOptionsData = async (apiUrl: string, query: string) => {
     setIsLoading(true);
 
     try {
-      const res = await axios.get("/api/products?search=" + query);
-
+      const res = await axios.get(apiUrl + query);
       setIsLoading(false);
-
       return res.data.data.map((e: any) => ({ id: e._id, name: e.name }));
     } catch (err) {
       console.error(err);
       setIsLoading(false);
+      return [];
+    }
+  };
+  
+
+  const handleFormSubmit = async (values: any) => {
+    setSubmitLoading(true);
+    const data = { vendorId: values.vendorId, items: values.items };
+    try {
+      const purchaseResponse = await axios.post("/api/purchases", data);
+      message.success(purchaseResponse.data.message);
+      router.push("/profile?id=3");
+    } catch (error: any) {
+      if (
+        error.response &&
+        error.response.data &&
+        error.response.data.message
+      ) {
+        message.error(error.response.data.message);
+      } else {
+        message.error("An error occurred while saving the purchase");
+      }
+    } finally {
+      setSubmitLoading(false);
     }
   };
 
   useEffect(() => {
-    handleSearch("");
+    handleProductSearch("");
+    handleVendorSearch("");
+    form.setFieldsValue({ items: [{}] });
   }, []);
 
   return (
-    <Form onFinish={onSave} layout="vertical">
+    <Form form={form} onFinish={handleFormSubmit} layout="vertical">
       <div className="flex p-3">
-        <Form.Item label="Vendor" className="flex-1 me-9">
-          {/*  <Select
+        <Form.Item
+          name="vendorId"
+          label="Vendor"
+          className="flex-1 me-9"
+          rules={[{ required: true, message: "Vendor is required" }]}
+        >
+          <Select
             className="w-full"
             showSearch
-            onSearch={handleSearch}
+            onSearch={handleVendorSearch}
             placeholder="Select a Vendor"
-            // value={item.productId}
-            // onChange={(val) => handleChange(val, index)}
             filterOption={false}
-            onClick={onSelectClicked}
             loading={isLoading}
+            allowClear
+            onClick={() => handleVendorSearch("")}
           >
             {vendorOptions.map((option) => (
               <Option key={option.id} value={option.id}>
                 {option.name}
               </Option>
             ))}
-          </Select> */}
+          </Select>
         </Form.Item>
 
         <div className="flex-2 flex-col items-end content-end">
-          <Button type="primary" onClick={handleAddItem}>
+          <Button
+            type="primary"
+            onClick={() => {
+              const items = form.getFieldValue("items") || [];
+              form.setFieldsValue({ items: [...items, {}] });
+            }}
+          >
             Add Item
           </Button>
         </div>
       </div>
 
-      {items.map((item, index) => (
-        <div
-          key={index}
-          className="flex space-x-2 p-3 m-1"
-          style={{ border: "1px solid grey" }}
-        >
-          <Form.Item className="flex-1" label="Product">
-            <Select
-              className="w-full"
-              showSearch
-              onSearch={handleSearch}
-              placeholder="Select a product"
-              value={item.productId}
-              onChange={(val) => handleChange(val, index)}
-              filterOption={false}
-              loading={isLoading}
-              onClick={() => handleSearch("")}
-            >
-              {productOptions.map((option) => (
-                <Option key={option.id} value={option.id}>
-                  {option.name}
-                </Option>
-              ))}
-            </Select>
-          </Form.Item>
-          <Form.Item className="flex-1" label="Purchasing Price">
-            <Input
-              placeholder="Purchasing Price"
-              type="number"
-              value={item.purchasingPrice}
-              onChange={(e) =>
-                handleInputChange(
-                  index,
-                  "purchasingPrice",
-                  parseFloat(e.target.value)
-                )
+      <Form.List
+        name="items"
+        rules={[
+          {
+            validator: async (_, items) => {
+              if (!items || items.length === 0) {
+                return Promise.reject(
+                  new Error("At least one item is required")
+                );
               }
-            />
-          </Form.Item>
-          <Form.Item className="flex-1" label="Selling Price">
-            <Input
-              placeholder="Selling Price"
-              type="number"
-              value={item.sellingPrice}
-              onChange={(e) =>
-                handleInputChange(
-                  index,
-                  "sellingPrice",
-                  parseFloat(e.target.value)
-                )
-              }
-            />
-          </Form.Item>
-          <Form.Item className="flex-1" label="Selling Price">
-            <Input
-              placeholder="Quantity"
-              type="number"
-              value={item.quantity}
-              onChange={(e) =>
-                handleInputChange(index, "quantity", parseInt(e.target.value))
-              }
-            />
-          </Form.Item>
-          <Button onClick={() => handleRemoveItem(index)}>Remove</Button>
-        </div>
-      ))}
+            },
+          },
+        ]}
+      >
+        {(fields, { add, remove }) => (
+          <>
+            {fields.map((field, index) => (
+              <div
+                key={field.key}
+                className="flex space-x-2 p-3 m-1 items-end"
+                style={{ border: "1px solid grey" }}
+              >
+                <Form.Item
+                  {...field}
+                  name={[field.name, "productId"]}
+                  className="flex-1"
+                  label="Product"
+                  rules={[{ required: true, message: "Product is required" }]}
+                >
+                  <Select
+                    className="w-full"
+                    showSearch
+                    onSearch={handleProductSearch}
+                    placeholder="Select a product"
+                    filterOption={false}
+                    loading={isLoading}
+                    onClick={() => handleProductSearch("")}
+                    onChange={(val) => handleProductChange(val, index)}
+                  >
+                    {productOptions
+                      .filter(
+                        (option) =>
+                          !selectedProducts.includes(option.id) ||
+                          option.id ===
+                            form.getFieldValue(["items", index, "productId"])
+                      )
+                      .map((option) => (
+                        <Option key={option.id} value={option.id}>
+                          {option.name}
+                        </Option>
+                      ))}
+                  </Select>
+                </Form.Item>
+
+                <Form.Item
+                  {...field}
+                  name={[field.name, "purchasingPrice"]}
+                  className="flex-1"
+                  label="Purchasing Price"
+                  rules={[
+                    { required: true, message: "Purchasing Price is required" },
+                    {
+                      validator: (_, value) => {
+                        const num = parseFloat(value);
+                        if (isNaN(num) || num <= 0) {
+                          return Promise.reject(
+                            "Purchasing Price must be greater than 0"
+                          );
+                        }
+                        return Promise.resolve();
+                      },
+                    },
+                  ]}
+                >
+                  <Input
+                    type="number"
+                    step="0.01"
+                    min="0"
+                    placeholder="Purchasing Price"
+                  />
+                </Form.Item>
+
+                <Form.Item
+                  {...field}
+                  name={[field.name, "sellingPrice"]}
+                  className="flex-1"
+                  label="Selling Price"
+                  rules={[
+                    { required: true, message: "Selling Price is required" },
+                    {
+                      validator: (_, value) => {
+                        const num = parseFloat(value);
+                        if (isNaN(num) || num <= 0) {
+                          return Promise.reject(
+                            "Selling Price must be greater than 0"
+                          );
+                        }
+                        return Promise.resolve();
+                      },
+                    },
+                  ]}
+                >
+                  <Input
+                    type="number"
+                    step="0.01"
+                    min="0"
+                    placeholder="Selling Price"
+                  />
+                </Form.Item>
+
+                <Form.Item
+                  {...field}
+                  name={[field.name, "quantity"]}
+                  className="flex-1"
+                  label="Quantity"
+                  rules={[
+                    { required: true, message: "Quantity is required" },
+                    {
+                      validator: (_, value) => {
+                        const num = parseInt(value, 10);
+                        if (isNaN(num) || num <= 0) {
+                          return Promise.reject(
+                            "Quantity must be greater than 0"
+                          );
+                        }
+                        return Promise.resolve();
+                      },
+                    },
+                  ]}
+                >
+                  <Input type="number" min="1" placeholder="Quantity" />
+                </Form.Item>
+
+                <Button
+                  onClick={() => {
+                    const items = form.getFieldValue("items");
+                    const removedProductId = items[field.name]?.productId;
+                    if (removedProductId) {
+                      setSelectedProducts((prevSelected) =>
+                        prevSelected.filter((id) => id !== removedProductId)
+                      );
+                    }
+                    remove(field.name);
+                  }}
+                >
+                  Remove
+                </Button>
+              </div>
+            ))}
+          </>
+        )}
+      </Form.List>
+
       <Form.Item>
-        <Button type="primary" htmlType="submit" loading={loading}>
+        <Button type="primary" htmlType="submit" loading={submitLoading}>
           Save
         </Button>
       </Form.Item>
@@ -222,8 +304,3 @@ const PurchaseForm = ({ loading, onSave }: PurchaseFormProps) => {
 };
 
 export default PurchaseForm;
-
-interface PurchaseFormProps {
-  loading: boolean;
-  onSave: any;
-}
