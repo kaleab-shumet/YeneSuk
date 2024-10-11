@@ -10,9 +10,9 @@ const productSchema = new mongoose.Schema(
       required: true,
     },
 
-    price: { type: Number, default: 0.0 },
+    sellingPrice: { type: Number, default: 0.0 },
     purchasingPrice: { type: Number, default: 0.0 },
-    countInStock: { type: Number, default: 0 },
+    quantity: { type: Number, default: 0 },
 
     images: { type: [], required: true, default: [] },
     features: { type: [], required: true, default: [] },

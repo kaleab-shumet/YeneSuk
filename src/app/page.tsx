@@ -59,15 +59,15 @@ export default async function Home({ searchParams }: { searchParams: any }) {
                   allowHalf
                 />
                 <span className="text-gray-500 text-xs">
-                  {product.countInStock > 0
-                    ? `${product.countInStock} in stock`
+                  {product.quantity > 0
+                    ? `${product.quantity} in stock`
                     : "Out of stock"}
                 </span>
               </div>
             </Link>
 
             <div className="flex gap-5 items-center justify-between">
-              <h1 className="text-xl font-semibold">$ {product.price}</h1>
+              <h1 className="text-xl font-semibold">$ {product.sellingPrice}</h1>
               <AddToCartBtn product={product} />
             </div>
           </div>

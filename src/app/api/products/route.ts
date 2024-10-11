@@ -22,7 +22,7 @@ export async function POST(request: NextRequest) {
 
     reqBody.createdBy = userId;
 
-    const productBody = excludeAttributes(reqBody, ["price", "purchasingPrice", "countInStock"])
+    const productBody = excludeAttributes(reqBody, ["price", "purchasingPrice", "quantity"])
 
 
 

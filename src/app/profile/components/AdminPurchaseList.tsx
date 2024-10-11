@@ -76,10 +76,10 @@ function AdminPurchaseList() {
               type="primary"
               className="btn-small"
               onClick={() => {
-                router.push(`/profile/edit_purchase/${params._id}`);
+                router.push(`/profile/purchase_item/${params._id}`);
               }}
             >
-              Edit
+              View
             </Button>
           </div>
         );

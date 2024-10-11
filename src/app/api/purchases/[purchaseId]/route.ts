@@ -15,7 +15,7 @@ export async function GET(
     .populate('vendor') // Populate vendor details
     .populate({
       path: 'items.product',
-      select: 'name price purchasingPrice countInStock'
+      select: 'name price purchasingPrice quantity'
     }); 
     
     return NextResponse.json(purchase);

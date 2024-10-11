@@ -13,6 +13,14 @@ const OrderStatus = {
   CANCELLED: 'cancelled'
 };
 
+const OrderItemSchema: mongoose.Schema = new mongoose.Schema({
+  productId: { type: String, required: true },
+  name: { type: String, required: true },
+  sellingPrice: { type: Number, required: true },
+  purchasingPrice: { type: Number, required: true },
+  quantity: { type: Number, required: true },
+});
+
 const orderSchema = new mongoose.Schema(
   {
     user: {
@@ -20,7 +28,7 @@ const orderSchema = new mongoose.Schema(
       required: true,
       ref: "users",
     },
-    items: [],
+    items: [OrderItemSchema],
     paymentStatus: {
       type: String,
       required: true,

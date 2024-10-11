@@ -76,7 +76,7 @@ export async function PUT(
             continue; // Skip if the product does not exist
           }
 
-          product.countInStock += orderItem.quantity;
+          product.quantity += orderItem.quantity;
           // Save the updated product
           await product.save();
 

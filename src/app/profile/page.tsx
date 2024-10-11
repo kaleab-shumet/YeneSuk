@@ -11,6 +11,7 @@ import AdminPurchaseList from "./components/AdminPurchaseList";
 import AdminVendorList from "./components/AdminVendorList";
 import PersonalInfo from "./components/PersonalInfo";
 import UsersList from "./components/UsersList";
+import AdminDashboard from "./components/AdminDashboard";
 
 function Profile() {
   const { currentUser } = useSelector((state: any) => state.user);
@@ -30,6 +31,10 @@ function Profile() {
           }}
           activeKey={selectedTab}
         >
+          <Tabs.TabPane tab="Dashboard" key="0">
+            <AdminDashboard />
+          </Tabs.TabPane>
+
           <Tabs.TabPane tab="Orders" key="1">
             <AdminOrdersList />
           </Tabs.TabPane>
@@ -46,13 +51,10 @@ function Profile() {
             <AdminVendorList />
           </Tabs.TabPane>
 
-          
           <Tabs.TabPane tab="Categories" key="5">
             <CategoriesList />
           </Tabs.TabPane>
-         
-          
-          
+
           <Tabs.TabPane tab="Users" key="6">
             <UsersList />
           </Tabs.TabPane>

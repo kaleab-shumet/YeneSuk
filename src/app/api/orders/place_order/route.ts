@@ -13,9 +13,10 @@ interface RequestOrderItem {
 
 // This is product information to be saved in order
 interface OrderItem {
-  _id: string; // Changed to string
+  productId: string; // Changed to string
   name: string; // Changed to string
-  price: number;
+  sellingPrice: number;
+  purchasingPrice: number;
   quantity: number;
 }
 
@@ -37,7 +38,7 @@ async function processOrder(userId: string, reqOrderItemsList: RequestOrderItem[
         throw new Error(`Product with ID ${item.productId} not found.`);
       }
 
-      if (product.countInStock < item.quantity) {
+      if (product.quantity < item.quantity) {
         throw new Error(`${product.name} is out of stock.`);
       }
 
@@ -51,13 +52,14 @@ async function processOrder(userId: string, reqOrderItemsList: RequestOrderItem[
   }
 
   const orderItems: OrderItem[] = productsToUpdate.map(e => ({
-    _id: e._id.toString(), // Ensure _id is a string
+    productId: e._id.toString(), // Ensure _id is a string
     name: e.name,
-    price: e.price,
+    sellingPrice: e.sellingPrice,
+    purchasingPrice: e.purchasingPrice,
     quantity: productsQuantHashmap[e._id.toString()]
   }));
 
-  const totalAmount = orderItems.reduce((acc, ci) => acc + (ci.price * ci.quantity), 0);
+  const totalAmount = orderItems.reduce((acc, ci) => acc + (ci.sellingPrice * ci.quantity), 0);
 
   try {
     const newOrder = new Order({
@@ -77,7 +79,7 @@ async function processOrder(userId: string, reqOrderItemsList: RequestOrderItem[
     const product = productsToUpdate.find(p => p._id.toString() === item.productId);
 
     if (product) {
-      product.countInStock -= item.quantity; // Subtract the ordered quantity
+      product.quantity -= item.quantity; // Subtract the ordered quantity
       await product.save(); // Save the updated product
     }
   }

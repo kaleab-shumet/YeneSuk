@@ -26,7 +26,7 @@ function AddToCartBtn({ product }: { product: ProductInterface }) {
         disabled={cartItems.some(
           (item: ProductInterface) =>
             item._id === product._id
-        ) || product.countInStock === 0}
+        ) || product.quantity === 0}
       >
         Add to cart
       </Button>

@@ -32,7 +32,7 @@ export async function PUT(
     await validateJWT(request);
     const reqBody = await request.json();
 
-    const productBody = excludeAttributes(reqBody, ["price", "purchasingPrice", "countInStock"])
+    const productBody = excludeAttributes(reqBody, ["price", "purchasingPrice", "quantity"])
     await Product.findByIdAndUpdate(params.productid, productBody);
     return NextResponse.json({
       message: "Product updated successfully",

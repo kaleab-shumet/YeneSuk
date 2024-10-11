@@ -22,7 +22,7 @@ function Cart() {
   const [loading, setLoading] = React.useState(false);
   const { cartItems }: CartState = useSelector((state: any) => state.cart);
   const subTotal = cartItems.reduce(
-    (acc, item) => acc + item.price * item.quantity,
+    (acc, item) => acc + item.sellingPrice * item.quantity,
     0
   );
   const total = subTotal;
@@ -104,7 +104,7 @@ function Cart() {
                   </div>
                 </div>
 
-                <span className="col-span-1">$ {item.price}</span>
+                <span className="col-span-1">$ {item.sellingPrice}</span>
 
                 <div className="col-span-1 border border-solid p-2 border-gray-400 flex gap-2 justify-between">
                   <i
@@ -137,7 +137,7 @@ function Cart() {
                 </div>
 
                 <span className="col-span-1">
-                  $ {item.price * item.quantity}
+                  $ {item.sellingPrice * item.quantity}
                 </span>
 
                 <div className="xl:hidden block col-span-4">
@@ -156,7 +156,7 @@ function Cart() {
                 <span>
                   ${" "}
                   {cartItems.reduce(
-                    (acc, item) => acc + item.price * item.quantity,
+                    (acc, item) => acc + item.sellingPrice * item.quantity,
                     0
                   )}
                 </span>

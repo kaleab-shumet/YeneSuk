@@ -10,7 +10,7 @@ function ProductActionButtons({ product }: { product: any }) {
   const dispatch = useDispatch();
   return (
     <div className="flex gap-5 mt-5">
-      <Button type="default" disabled={product.countInStock === 0}
+      <Button type="default" disabled={product.quantity === 0}
        onClick={() => {
         dispatch(
           AddProductToCart({
@@ -23,7 +23,7 @@ function ProductActionButtons({ product }: { product: any }) {
       >
         Add to Cart
       </Button>
-      <Button type="primary" disabled={product.countInStock === 0}
+      <Button type="primary" disabled={product.quantity === 0}
       onClick={() => {
         dispatch(
           AddProductToCart({

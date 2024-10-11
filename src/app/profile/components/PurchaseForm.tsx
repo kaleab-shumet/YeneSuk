@@ -1,3 +1,4 @@
+"use client";
 import React, { useEffect, useState } from "react";
 import { Form, Input, Button, Select, message } from "antd";
 import axios from "axios";
@@ -22,15 +23,20 @@ interface VendorOption {
   name: string;
 }
 
-const PurchaseForm = () => {
+interface PurchaseFormProps {
+  purchaseId?: string;
+}
+
+const PurchaseForm: React.FC<PurchaseFormProps> = ({ purchaseId }) => {
   const router = useRouter();
   const [form] = Form.useForm();
   const [productOptions, setProductOptions] = useState<ProductOption[]>([]);
   const [vendorOptions, setVendorOptions] = useState<VendorOption[]>([]);
   const [selectedProducts, setSelectedProducts] = useState<string[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(false);
-
   const [submitLoading, setSubmitLoading] = useState<boolean>(false);
+  const [totalAmount, setTotalAmount] = useState<number>(0);
+  const [isReadOnly, setIsReadOnly] = useState<boolean>(false);
 
   const handleProductSearch = async (query: string) => {
     const optionsData = await fetchOptionsData("/api/products?search=", query);
@@ -43,6 +49,8 @@ const PurchaseForm = () => {
   };
 
   const handleProductChange = (pid: string, index: number) => {
+    if (isReadOnly) return;
+
     const currentItems = form.getFieldValue("items") || [];
     const oldProductId = currentItems[index]?.productId;
 
@@ -56,6 +64,8 @@ const PurchaseForm = () => {
         i === index ? { ...item, productId: pid } : item
       ),
     });
+
+    calculateTotalAmount();
   };
 
   const fetchOptionsData = async (apiUrl: string, query: string) => {
@@ -71,9 +81,10 @@ const PurchaseForm = () => {
       return [];
     }
   };
-  
 
   const handleFormSubmit = async (values: any) => {
+    if (isReadOnly) return;
+
     setSubmitLoading(true);
     const data = { vendorId: values.vendorId, items: values.items };
     try {
@@ -95,11 +106,77 @@ const PurchaseForm = () => {
     }
   };
 
+  const fetchPurchaseData = async () => {
+    try {
+      const response = await axios.get(`/api/purchases/${purchaseId}`);
+      const purchaseData = response.data;
+
+      console.log("purchaseData", purchaseData);
+
+      const optionVendor: VendorOption = {
+        id: purchaseData.vendor._id,
+        name: purchaseData.vendor.name,
+      };
+
+      setVendorOptions([optionVendor]);
+
+      const optionsProduct: ProductOption[] = purchaseData.items.map(
+        (item: any) => ({
+          id: item.product._id,
+          name: item.product.name,
+        })
+      );
+
+      setProductOptions(optionsProduct);
+
+      const formValues = {
+        vendorId: purchaseData.vendor._id,
+        items: purchaseData.items.map((item: any) => ({
+          productId: item.product._id,
+          purchasingPrice: item.purchasingPrice,
+          sellingPrice: item.sellingPrice,
+          quantity: item.quantity,
+        })),
+      };
+
+      form.setFieldsValue(formValues);
+
+      setSelectedProducts(
+        purchaseData.items.map((item: any) => item.product._id)
+      );
+
+      calculateTotalAmount();
+    } catch (error) {
+      console.error("Error fetching purchase data:", error);
+      message.error("Failed to load purchase data");
+    }
+  };
+
+  const calculateTotalAmount = () => {
+    const items = form.getFieldValue("items") || [];
+    const total = items.reduce((sum: number, item: Item) => {
+      return sum + (item.purchasingPrice || 0) * (item.quantity || 0);
+    }, 0);
+    setTotalAmount(total);
+  };
+
   useEffect(() => {
-    handleProductSearch("");
-    handleVendorSearch("");
-    form.setFieldsValue({ items: [{}] });
-  }, []);
+    if (purchaseId) {
+      setIsReadOnly(true);
+      fetchPurchaseData();
+    } else {
+      handleProductSearch("");
+      handleVendorSearch("");
+      setIsReadOnly(false);
+      form.setFieldsValue({ items: [{}] });
+      setTotalAmount(0);
+    }
+  }, [purchaseId]);
+
+  useEffect(() => {
+    form.setFields([{ name: "items", touched: false }]);
+    calculateTotalAmount();
+  }, [form.getFieldValue("items")]);
 
   return (
     <Form form={form} onFinish={handleFormSubmit} layout="vertical">
@@ -119,6 +196,13 @@ const PurchaseForm = () => {
             loading={isLoading}
             allowClear
             onClick={() => handleVendorSearch("")}
+            disabled={isReadOnly}
+            style={{
+              backgroundColor: 'white', // Matches normal background
+              color: '#4a5568', // Tailwind's gray-800
+              border: '1px solid #cbd5e0', // Tailwind's gray-300
+              cursor: 'default', // Indicate non-interactivity
+            }}
           >
             {vendorOptions.map((option) => (
               <Option key={option.id} value={option.id}>
@@ -128,17 +212,19 @@ const PurchaseForm = () => {
           </Select>
         </Form.Item>
 
-        <div className="flex-2 flex-col items-end content-end">
-          <Button
-            type="primary"
-            onClick={() => {
-              const items = form.getFieldValue("items") || [];
-              form.setFieldsValue({ items: [...items, {}] });
-            }}
-          >
-            Add Item
-          </Button>
-        </div>
+        {!isReadOnly && (
+          <div className="flex-2 flex-col items-end content-end">
+            <Button
+              type="primary"
+              onClick={() => {
+                const items = form.getFieldValue("items") || [];
+                form.setFieldsValue({ items: [...items, {}] });
+              }}
+            >
+              Add Item
+            </Button>
+          </div>
+        )}
       </div>
 
       <Form.List
@@ -179,6 +265,8 @@ const PurchaseForm = () => {
                     loading={isLoading}
                     onClick={() => handleProductSearch("")}
                     onChange={(val) => handleProductChange(val, index)}
+                    allowClear
+                    disabled={isReadOnly}
                   >
                     {productOptions
                       .filter(
@@ -220,6 +308,8 @@ const PurchaseForm = () => {
                     step="0.01"
                     min="0"
                     placeholder="Purchasing Price"
+                    onChange={() => calculateTotalAmount()}
+                    readOnly={isReadOnly}
                   />
                 </Form.Item>
 
@@ -227,7 +317,7 @@ const PurchaseForm = () => {
                   {...field}
                   name={[field.name, "sellingPrice"]}
                   className="flex-1"
-                  label="Selling Price"
+                  label="Selling Price(Inc.VAT)"
                   rules={[
                     { required: true, message: "Selling Price is required" },
                     {
@@ -248,6 +338,7 @@ const PurchaseForm = () => {
                     step="0.01"
                     min="0"
                     placeholder="Selling Price"
+                    readOnly={isReadOnly}
                   />
                 </Form.Item>
 
@@ -271,34 +362,49 @@ const PurchaseForm = () => {
                     },
                   ]}
                 >
-                  <Input type="number" min="1" placeholder="Quantity" />
+                  <Input
+                    type="number"
+                    min="1"
+                    placeholder="Quantity"
+                    onChange={() => calculateTotalAmount()}
+                    readOnly={isReadOnly}
+                  />
                 </Form.Item>
 
-                <Button
-                  onClick={() => {
-                    const items = form.getFieldValue("items");
-                    const removedProductId = items[field.name]?.productId;
-                    if (removedProductId) {
-                      setSelectedProducts((prevSelected) =>
-                        prevSelected.filter((id) => id !== removedProductId)
-                      );
-                    }
-                    remove(field.name);
-                  }}
-                >
-                  Remove
-                </Button>
+                {!isReadOnly && (
+                  <Button
+                    onClick={() => {
+                      const items = form.getFieldValue("items");
+                      const removedProductId = items[field.name]?.productId;
+                      if (removedProductId) {
+                        setSelectedProducts((prevSelected) =>
+                          prevSelected.filter((id) => id !== removedProductId)
+                        );
+                      }
+                      remove(field.name);
+                      calculateTotalAmount();
+                    }}
+                  >
+                    Remove
+                  </Button>
+                )}
               </div>
             ))}
           </>
         )}
       </Form.List>
 
-      <Form.Item>
-        <Button type="primary" htmlType="submit" loading={submitLoading}>
-          Save
-        </Button>
-      </Form.Item>
+      <div className="mt-4 mb-4">
+        <strong>Total Amount: ${totalAmount.toFixed(2)}</strong>
+      </div>
+
+      {!isReadOnly && (
+        <Form.Item>
+          <Button type="primary" htmlType="submit" loading={submitLoading}>
+            Save
+          </Button>
+        </Form.Item>
+      )}
     </Form>
   );
 };

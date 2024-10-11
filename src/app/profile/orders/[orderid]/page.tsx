@@ -47,7 +47,7 @@ function OderInfo({ params }: { params: any }) {
       title: "Total",
       dataIndex: "total",
       render: (total: number, record: any) =>
-        `$ ${record.price * record.quantity}`,
+        `$ ${record.sellingPrice * record.quantity}`,
     },
   ];
 

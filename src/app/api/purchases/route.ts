@@ -26,9 +26,9 @@ export async function POST(request: NextRequest) {
 
     const items: PurchaseItem[] = reqBody.items.map((item: any) => ({
       product: item.productId,
-      quantity: item.quantity,
-      purchasingPrice: item.purchasingPrice,
-      sellingPrice: item.sellingPrice,
+      quantity: Number(item.quantity),
+      purchasingPrice: Number(item.purchasingPrice),
+      sellingPrice: Number(item.sellingPrice),
     }))
 
     const productIds = items.map(item => item.product);
@@ -40,9 +40,9 @@ export async function POST(request: NextRequest) {
       updateOne: {
         filter: { _id: productId },
         update: {
-          $inc: { countInStock: quantities[index] },
+          $inc: { quantity: quantities[index] },
           $set: {
-            price: prices[index],
+            sellingPrice: prices[index],
             purchasingPrice: purchasingPrices[index]
           }
         },
@@ -100,7 +100,7 @@ export async function GET(request: NextRequest) {
       .populate('vendor') // Populate vendor details
       .populate({
         path: 'items.product',
-        select: 'name price purchasingPrice countInStock'
+        select: 'name price purchasingPrice quantity'
       });
 
     return NextResponse.json({
