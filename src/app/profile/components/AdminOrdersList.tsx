@@ -5,6 +5,7 @@ import moment from "moment";
 import { useRouter } from "next/navigation";
 import Loader from "@/components/Loader";
 import { showConfirm } from "./ConfirmDialog";
+import { nanoid } from "nanoid";
 
 function AdminOrdersList() {
   const router = useRouter();
@@ -90,8 +91,8 @@ function AdminOrdersList() {
             {status !== "created"
               ? orderStatusList
                   .filter((i) => i !== "created")
-                  .map((os) => <option value={os}>{os}</option>)
-              : orderStatusList.map((os) => <option value={os}>{os}</option>)}
+                  .map((os,index) => <option value={os} key={index}>{os}</option>)
+              : orderStatusList.map((os, index) => <option value={os} key={index}>{os}</option>)}
           </select>
         </div>
       ),
